@@ -1,0 +1,11 @@
+services:
+  avisos:
+    image: campusflow-avisos:${APP_VERSION}
+    env_file: .env
+    ports:
+      - ${APP_PORT}:${APP_PORT}
+    volumes:
+      - datos-avisos:/data
+    restart: unless-stopped
+volumes:
+  datos-avisos:

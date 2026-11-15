@@ -1,0 +1,30 @@
+name: ci-avisos
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  construir-y-probar:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12.7
+      - name: Pruebas automaticas
+        run: python -m unittest discover -s tests -v
+      - name: Construir imagen con la version del commit
+        run: docker build -t campusflow-avisos:${{ github.sha }} .
+      - name: Levantar contenedor y verificar salud
+        run: |
+          docker run -d --name prueba -p 8080:8080 \
+            -e APP_PORT=8080 -e APP_VERSION=ci -e APP_ENTORNO=ci \
+            -e ARCHIVO_AVISOS=/tmp/avisos.json campusflow-avisos:${{ github.sha }}
+          for i in $(seq 1 15); do
+            curl -sf http://127.0.0.1:8080/salud && exit 0
+            sleep 1
+          done
+          docker logs prueba
+          exit 1

@@ -1,0 +1,76 @@
+##### PASO 1: pipeline de validacion
+== 1. Pruebas automaticas ==
+test_config_completa (test_servicio.PruebasConfig.test_config_completa) ... ok
+test_falta_variable (test_servicio.PruebasConfig.test_falta_variable) ... ok
+test_puerto_no_numerico (test_servicio.PruebasConfig.test_puerto_no_numerico) ... ok
+test_crear_y_listar (test_servicio.PruebasHttp.test_crear_y_listar) ... [t] "POST /avisos HTTP/1.1" 201 -
+[t] "GET /avisos HTTP/1.1" 200 -
+ok
+test_ruta_inexistente (test_servicio.PruebasHttp.test_ruta_inexistente) ... [t] "GET /nada HTTP/1.1" 404 -
+ok
+test_salud (test_servicio.PruebasHttp.test_salud) ... [t] "GET /salud HTTP/1.1" 200 -
+ok
+test_texto_vacio (test_servicio.PruebasHttp.test_texto_vacio) ... [t] "POST /avisos HTTP/1.1" 400 -
+ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.519s
+
+OK
+== 2. Revision de que exista la guia de variables ==
+.env.example documenta las variables
+CI OK
+
+##### PASO 2: desplegar 1.0.0
+Version 1.0.0 construida en despliegues/versiones/1.0.0
+DESPLIEGUE OK: 1.0.0 esta sana y atendiendo
+$ curl /salud
+{"estado": "ok", "version": "1.0.0", "entorno": "local", "segundos_activo": 1.0}
+
+##### PASO 3: guardar un aviso para comprobar que el estado persiste
+{"id": 1, "texto": "Examen de redes el lunes"}
+
+##### PASO 4: desplegar 2.0.0 con la configuracion rota a proposito
+Version 2.0.0 construida en despliegues/versiones/2.0.0
+DESPLIEGUE FALLO: 2.0.0 no paso la verificacion de salud
+Volviendo automaticamente a 1.0.0
+REVERSION OK: 1.0.0 esta sana otra vez
+$ curl /salud
+{"estado": "ok", "version": "1.0.0", "entorno": "local", "segundos_activo": 1.0}
+
+##### PASO 5: los avisos siguen ahi despues del fallo
+[{"id": 1, "texto": "Examen de redes el lunes"}]
+
+##### PASO 6: desplegar 2.0.0 corregida
+Version 2.0.0 ya construida, se reutiliza sin reconstruir
+DESPLIEGUE OK: 2.0.0 esta sana y atendiendo
+$ curl /salud
+{"estado": "ok", "version": "2.0.0", "entorno": "local", "segundos_activo": 1.0}
+
+##### PASO 7: reversion manual a la anterior
+Revirtiendo manualmente de 2.0.0 a 1.0.0
+Version 1.0.0 ya construida, se reutiliza sin reconstruir
+DESPLIEGUE OK: 1.0.0 esta sana y atendiendo
+$ curl /salud
+{"estado": "ok", "version": "1.0.0", "entorno": "local", "segundos_activo": 1.0}
+
+##### PASO 8: avisos al final
+[{"id": 1, "texto": "Examen de redes el lunes"}]
+
+##### Registro del servicio
+Arrancando avisos version 1.0.0 en entorno local puerto 8080
+[1.0.0] "GET /salud HTTP/1.1" 200 -
+[1.0.0] "GET /salud HTTP/1.1" 200 -
+[1.0.0] "POST /avisos HTTP/1.1" 201 -
+ERROR DE CONFIGURACION: Faltan variables de entorno: ARCHIVO_AVISOS
+Arrancando avisos version 1.0.0 en entorno local puerto 8080
+[1.0.0] "GET /salud HTTP/1.1" 200 -
+[1.0.0] "GET /salud HTTP/1.1" 200 -
+[1.0.0] "GET /avisos HTTP/1.1" 200 -
+Arrancando avisos version 2.0.0 en entorno local puerto 8080
+[2.0.0] "GET /salud HTTP/1.1" 200 -
+[2.0.0] "GET /salud HTTP/1.1" 200 -
+Arrancando avisos version 1.0.0 en entorno local puerto 8080
+[1.0.0] "GET /salud HTTP/1.1" 200 -
+[1.0.0] "GET /salud HTTP/1.1" 200 -
+[1.0.0] "GET /avisos HTTP/1.1" 200 -
